@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Digital Address Locator</title>
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <style>
+        body { font-family: Arial; }
+        #map { height: 90vh; }
+    </style>
+</head>
+<body>
+
+<h2>Digital Address Locator</h2>
+<p>Click on a building to generate its permanent code</p>
+
+<div id="map"></div>
+
+<p>
+    <b>Building Code:</b>
+    <span id="code">None</span>
+</p>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
