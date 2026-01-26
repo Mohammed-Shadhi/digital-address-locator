@@ -1,218 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Digital Address Locator</title>
+<meta charset="utf-8">
+<title>Digital Address Locator</title>
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-
-  <!-- Routing -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"
-  />
-
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-      background: #f5f7fa;
-    }
-
-    .app {
-      display: flex;
-      height: 100vh;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: 340px;
-      background: #ffffff;
-      padding: 16px;
-      overflow-y: auto;
-      border-right: 1px solid #ddd;
-    }
-
-    .sidebar h2 {
-      margin-top: 0;
-      text-align: center;
-      color: #2c3e50;
-    }
-
-    .section {
-      margin-bottom: 18px;
-    }
-
-    .section label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: #34495e;
-    }
-
-    .section input,
-    .section select,
-    .section button {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 6px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-
-    .section button {
-      background: #3498db;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    .section button:hover {
-      background: #2980b9;
-    }
-
-    .danger {
-      background: #e74c3c !important;
-    }
-
-    .danger:hover {
-      background: #c0392b !important;
-    }
-
-    .info {
-      background: #ecf0f1;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-
-    ul, ol {
-      padding-left: 20px;
-      margin: 0;
-      font-size: 13px;
-    }
-
-    li {
-      margin-bottom: 4px;
-    }
-
-    .small-text {
-      font-size: 12px;
-      color: #555;
-    }
-
-    /* Map */
-    #map {
-      flex: 1;
-    }
-
-    /* Mobile */
-    @media (max-width: 768px) {
-      .app {
-        flex-direction: column;
-      }
-
-      .sidebar {
-        width: 100%;
-        height: 45vh;
-      }
-
-      #map {
-        height: 55vh;
-      }
-    }
-  </style>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
 </head>
 
-<body>
+<body style="margin:0;height:100vh;width:100vw;overflow:hidden;font-family:Arial, sans-serif;">
 
-<div class="app">
+<!-- MAP -->
+<div id="map" style="
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+"></div>
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-
-    <h2>Digital Address Locator</h2>
-
-    <div class="section">
-      <button id="autoLocateBtn">📍 Auto Locate</button>
-      <button onclick="clearRoute()" class="danger">❌ Clear Route</button>
-      <button id="addFavoriteBtn">⭐ Add to Favorites</button>
-    </div>
-
-    <div class="section">
-      <label>Search Place</label>
-      <input id="placeSearch" placeholder="Search a place" />
-      <button onclick="searchPlace()">Search</button>
-    </div>
-
-    <div class="section">
-      <label>Directions</label>
-      <input id="fromSearch" placeholder="From (optional)" />
-      <input id="toSearch" placeholder="To" />
-      <button onclick="searchRoute()">Go</button>
-    </div>
-
-    <div class="section">
-      <label>Radius</label>
-      <input
-        type="range"
-        id="radius"
-        min="500"
-        max="5000"
-        step="500"
-        value="1000"
-      />
-      <div class="small-text">
-        <span id="radiusValue">1000</span> meters
-      </div>
-    </div>
-
-    <div class="section">
-      <label>Transport Mode</label>
-      <select id="mode">
-        <option value="car">Driving</option>
-        <option value="foot">Walking</option>
-        <option value="bike">Cycling</option>
-      </select>
-    </div>
-
-    <div class="section info">
-      <div><b>Distance:</b> <span id="distance">-</span></div>
-      <div><b>Time:</b> <span id="time">-</span></div>
-    </div>
-
-    <div class="section">
-      <label>Turn-by-Turn Directions</label>
-      <ol id="instructions"></ol>
-    </div>
-
-    <div class="section">
-      <label>Recent Searches</label>
-      <ul id="history"></ul>
-    </div>
-
-    <div class="section">
-      <label>Favorite Places</label>
-      <ul id="favorites"></ul>
-    </div>
-
-  </div>
-
-  <!-- MAP -->
-  <div id="map"></div>
-
+<!-- SEARCH BAR -->
+<div style="
+  position:fixed;
+  top:12px;
+  left:50%;
+  transform:translateX(-50%);
+  background:white;
+  padding:8px;
+  border-radius:20px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+  z-index:1000;
+">
+  <input id="search" placeholder="Search place"
+    style="border:none;outline:none;width:200px;">
+  <button onclick="searchPlace()">🔍</button>
 </div>
 
-<!-- Scripts -->
+<!-- LEFT CONTROL -->
+<div style="
+  position:fixed;
+  top:80px;
+  left:12px;
+  background:white;
+  padding:12px;
+  border-radius:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.3);
+  z-index:1000;
+">
+  <button onclick="locate()">📍 Locate</button><br><br>
+
+  Radius (m)<br>
+  <input type="range" min="200" max="3000" step="200"
+         value="800" id="radius"
+         oninput="updateRadius()"><br>
+  <span id="radiusVal">800</span>
+</div>
+
+<!-- BOTTOM INFO -->
+<div id="info" style="
+  position:fixed;
+  bottom:-180px;
+  left:0;right:0;
+  background:white;
+  padding:16px;
+  border-radius:24px 24px 0 0;
+  box-shadow:0 -6px 18px rgba(0,0,0,0.3);
+  text-align:center;
+  transition:bottom 0.3s;
+  z-index:1000;
+">
+  <b>Building Code</b><br><br>
+  <div id="code" style="
+    background:#e6f6f4;
+    padding:10px;
+    border-radius:12px;
+    font-weight:bold;
+  ">---</div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+<script>
+const map = L.map("map").setView([10.5907,76.2086],15);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  maxZoom:19
+}).addTo(map);
+
+setTimeout(()=>map.invalidateSize(),200);
+
+let centerMarker=null, circle=null;
+let radius=800;
+
+function locate(){
+  navigator.geolocation.getCurrentPosition(p=>{
+    setCenter(p.coords.latitude,p.coords.longitude);
+  });
+}
+
+function setCenter(lat,lng){
+  if(centerMarker) map.removeLayer(centerMarker);
+  centerMarker=L.marker([lat,lng]).addTo(map);
+  map.setView([lat,lng],16);
+  drawRadius();
+}
+
+function drawRadius(){
+  if(circle) map.removeLayer(circle);
+  circle=L.circle(centerMarker.getLatLng(),{
+    radius:radius,
+    color:"#2FAE9E",
+    fillOpacity:0.25
+  }).addTo(map);
+}
+
+function updateRadius(){
+  radius=document.getElementById("radius").value;
+  document.getElementById("radiusVal").innerText=radius;
+  if(centerMarker) drawRadius();
+}
+
+function searchPlace(){
+  const q=document.getElementById("search").value;
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}`)
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.length) setCenter(+d[0].lat,+d[0].lon);
+    });
+}
+
+map.on("click",e=>{
+  document.getElementById("code").innerText =
+    "DAL-"+Math.abs(e.latlng.lat*1000|0)+"-"+Math.abs(e.latlng.lng*1000|0);
+  document.getElementById("info").style.bottom="0";
+});
+</script>
 
 </body>
 </html>
