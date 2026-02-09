@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Digital Address Locator</title>
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+</head>
+
+<body style="margin:0;height:100vh;width:100vw;overflow:hidden;font-family:Arial, sans-serif;">
+
+<!-- MAP -->
+<div id="map" style="
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+"></div>
+
+<!-- SEARCH BAR -->
+<div style="
+  position:fixed;
+  top:12px;
+  left:50%;
+  transform:translateX(-50%);
+  background:white;
+  padding:8px;
+  border-radius:20px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+  z-index:1000;
+">
+  <input id="search" placeholder="Search place"
+    style="border:none;outline:none;width:200px;">
+  <button onclick="searchPlace()">🔍</button>
+</div>
+
+<!-- LEFT CONTROL -->
+<div style="
+  position:fixed;
+  top:80px;
+  left:12px;
+  background:white;
+  padding:12px;
+  border-radius:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.3);
+  z-index:1000;
+">
+  <button onclick="locate()">📍 Locate</button><br><br>
+
+  Radius (m)<br>
+  <input type="range" min="200" max="3000" step="200"
+         value="800" id="radius"
+         oninput="updateRadius()"><br>
+  <span id="radiusVal">800</span>
+</div>
+
+<!-- BOTTOM INFO -->
+<div id="info" style="
+  position:fixed;
+  bottom:-180px;
+  left:0;right:0;
+  background:white;
+  padding:16px;
+  border-radius:24px 24px 0 0;
+  box-shadow:0 -6px 18px rgba(0,0,0,0.3);
+  text-align:center;
+  transition:bottom 0.3s;
+  z-index:1000;
+">
+  <b>Building Code</b><br><br>
+  <div id="code" style="
+    background:#e6f6f4;
+    padding:10px;
+    border-radius:12px;
+    font-weight:bold;
+  ">---</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const map = L.map("map").setView([10.5907,76.2086],15);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  maxZoom:19
+}).addTo(map);
+
+setTimeout(()=>map.invalidateSize(),200);
+
+let centerMarker=null, circle=null;
+let radius=800;
+
+function locate(){
+  navigator.geolocation.getCurrentPosition(p=>{
+    setCenter(p.coords.latitude,p.coords.longitude);
+  });
+}
+
+function setCenter(lat,lng){
+  if(centerMarker) map.removeLayer(centerMarker);
+  centerMarker=L.marker([lat,lng]).addTo(map);
+  map.setView([lat,lng],16);
+  drawRadius();
+}
+
+function drawRadius(){
+  if(circle) map.removeLayer(circle);
+  circle=L.circle(centerMarker.getLatLng(),{
+    radius:radius,
+    color:"#2FAE9E",
+    fillOpacity:0.25
+  }).addTo(map);
+}
+
+function updateRadius(){
+  radius=document.getElementById("radius").value;
+  document.getElementById("radiusVal").innerText=radius;
+  if(centerMarker) drawRadius();
+}
+
+function searchPlace(){
+  const q=document.getElementById("search").value;
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}`)
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.length) setCenter(+d[0].lat,+d[0].lon);
+    });
+}
+
+map.on("click",e=>{
+  document.getElementById("code").innerText =
+    "DAL-"+Math.abs(e.latlng.lat*1000|0)+"-"+Math.abs(e.latlng.lng*1000|0);
+  document.getElementById("info").style.bottom="0";
+});
+</script>
+
+</body>
+</html>
