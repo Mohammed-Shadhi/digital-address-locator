@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Digital Address Locator – Thrissur</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    #map {
+      height: 100%;
+    }
+
+    /* Search bar */
+    #search-bar {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 420px;
+      background: white;
+      border-radius: 24px;
+      padding: 10px 14px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      z-index: 1000;
+      display: flex;
+      gap: 8px;
+    }
+
+    #search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 15px;
+    }
+
+    #search-btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    /* Locate button */
+    #locate-btn {
+      position: absolute;
+      bottom: 120px;
+      right: 16px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: white;
+      border: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    /* Info card */
+    #info-card {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 420px;
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+    }
+
+    .code {
+      font-family: monospace;
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="map"></div>
+
+  <!-- Search bar -->
+  <div id="search-bar">
+    <input id="search-input" placeholder="Search places in Thrissur..." />
+    <button id="search-btn">🔍</button>
+  </div>
+
+  <!-- Locate button -->
+  <button id="locate-btn" title="Locate Me">📍</button>
+
+  <!-- Info -->
+  <div id="info-card">
+    <b>Status</b>
+    <div id="output">Tap inside a building to get its code</div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+
+</html>
+
+<!-- LEFT CONTROL -->
+<div style="
+  position:fixed;
+  top:80px;
+  left:12px;
+  background:white;
+  padding:12px;
+  border-radius:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.3);
+  z-index:1000;
+">
+  <button onclick="locate()">📍 Locate</button><br><br>
+
+  Radius (m)<br>
+  <input type="range" min="200" max="3000" step="200" value="800" id="radius" oninput="updateRadius()"><br>
+  <span id="radiusVal">800</span>
+</div>
+
+<!-- BOTTOM INFO -->
+<div id="info" style="
+  position:fixed;
+  bottom:-180px;
+  left:0;right:0;
+  background:white;
+  padding:16px;
+  border-radius:24px 24px 0 0;
+  box-shadow:0 -6px 18px rgba(0,0,0,0.3);
+  text-align:center;
+  transition:bottom 0.3s;
+  z-index:1000;
+">
+  <b>Building Code</b><br><br>
+  <div id="code" style="
+    background:#e6f6f4;
+    padding:10px;
+    border-radius:12px;
+    font-weight:bold;
+  ">---</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+  const map = L.map("map").setView([10.5907, 76.2086], 15);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19
+  }).addTo(map);
+
+  setTimeout(() => map.invalidateSize(), 200);
+
+  let centerMarker = null, circle = null;
+  let radius = 800;
+
+  function locate() {
+    navigator.geolocation.getCurrentPosition(p => {
+      setCenter(p.coords.latitude, p.coords.longitude);
+    });
+  }
+
+  function setCenter(lat, lng) {
+    if (centerMarker) map.removeLayer(centerMarker);
+    centerMarker = L.marker([lat, lng]).addTo(map);
+    map.setView([lat, lng], 16);
+    drawRadius();
+  }
+
+  function drawRadius() {
+    if (circle) map.removeLayer(circle);
+    circle = L.circle(centerMarker.getLatLng(), {
+      radius: radius,
+      color: "#2FAE9E",
+      fillOpacity: 0.25
+    }).addTo(map);
+  }
+
+  function updateRadius() {
+    radius = document.getElementById("radius").value;
+    document.getElementById("radiusVal").innerText = radius;
+    if (centerMarker) drawRadius();
+  }
+
+  function searchPlace() {
+    const q = document.getElementById("search").value;
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.length) setCenter(+d[0].lat, +d[0].lon);
+      });
+  }
+
+  map.on("click", e => {
+    document.getElementById("code").innerText =
+      "DAL-" + Math.abs(e.latlng.lat * 1000 | 0) + "-" + Math.abs(e.latlng.lng * 1000 | 0);
+    document.getElementById("info").style.bottom = "0";
+  });
+</script>
+
+</body>
+
+</html>
